@@ -1022,6 +1022,8 @@ function updateWords() {
 /* ---------- planner ---------- */
 function updatePlanner() {
   const m = MODELS[S.a], s = setup();
+  const capped = !!m.maxCtx && S.ctx > m.maxCtx;
+  s.ctx = ctxFor(m);
   const r = K.plan(m, s);
   const g = K.GPUS[S.gpu], name = `${S.count}× ${g.name}`;
   $("verdict").className = "verdict " + (r.fits ? "ok" : "no");
@@ -1041,7 +1043,8 @@ function updatePlanner() {
   const icon = { full: "🐘", swa: "🐟", dsa: "🐘🐭", mla: "🐿️", mla_dsa: "🐿️🐭", linear: "🐫" };
   $("layerMap").innerHTML = `<div class="cells">${m.layers.map((l, i) => `<i class="c ${l.k}" title="${i}: ${l.k}"></i>`).join("")}</div><div class="counts">${Object.entries(counts).map(([k, n]) => `<span><i class="c ${k}"></i>${icon[k]} ${n}</span>`).join("")}</div>`;
   // advice
-  $("advice").innerHTML = K.advise(m, s, r).map(a => `<li>${T[lang].adv[a.key](a.vars)}</li>`).join("");
+  const adv = K.advise(m, s, r); if (capped) adv.push({ key: "overCap", vars: { cap: m.maxCtx } });
+  $("advice").innerHTML = adv.map(a => `<li>${T[lang].adv[a.key](a.vars)}</li>`).join("");
   drawCharts();
 }
 
@@ -1097,7 +1100,7 @@ function lineChart(el, data, key, yLabel) {
 function drawCharts() { const d = series(); lineChart($("chartMem"), d, "mem", t("chartMemY")); lineChart($("chartRead"), d, "read", t("chartReadY")); }
 
 /* ---------- wiring ---------- */
-function refresh() { $("pCtxOut").textContent = `${fmtTok(S.ctx)} ${t("tok")}`; updateStage(); updatePlanner(); }
+function refresh() { $("pCtxOut").textContent = `${fmtTok(ctxFor(MODELS[S.a]))} ${t("tok")}`; updateStage(); updatePlanner(); }
 function setA(id) { S.a = id; S.w = MODELS[id].w; $("pW").value = S.w; $("selA").value = id; $("pModel").value = id; if (S.b === id) S.b = "full"; $("selB").value = S.b; ctxSliderRange(); refresh(); }
 $("selA").onchange = e => setA(e.target.value);
 $("pModel").onchange = e => setA(e.target.value);
