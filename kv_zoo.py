@@ -339,6 +339,9 @@ def layer_summary(layers):
 
 
 def report(m, s, compare=None):
+    if m.get("max_ctx") and s["ctx"] > m["max_ctx"]:
+        m = dict(m, notes=m.get("notes", []) + ["context %s is above this model's max of %s tokens; using the max" % (fmt_tok(s["ctx"]), fmt_tok(m["max_ctx"]))])
+        s = dict(s, ctx=int(m["max_ctx"]))
     r = plan(m, s)
     p = PREC[s["kv"]]
     line = "-" * 62
